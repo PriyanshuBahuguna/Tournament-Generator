@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 0%; /* Pure black */
+    --foreground: 0 0% 100%; /* Pure white */
+
+    --card: 0 0% 3%; /* Very dark gray for cards */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%; /* Changed to white */
+    --primary-foreground: 0 0% 0%; /* Black text on white background */
+
+    --secondary: 0 0% 9%; /* Darker gray for secondary elements */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 0 0% 9%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%; /* Darker border */
+    --input: 0 0% 15%;
+    --ring: 0 0% 100%; /* Changed to white */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Override button styles to ensure they're white in dark mode */
+.dark .btn-primary,
+.dark .btn-secondary,
+.dark [data-state="active"],
+.dark button[data-state="active"],
+.dark .text-primary {
+  color: white !important;
+}
+
+.dark .border-primary {
+  border-color: white !important;
+}
+
+.dark .bg-primary {
+  background-color: white !important;
+  color: black !important;
+}
+
+.dark .text-primary {
+  color: white !important;
+}
+
+/* Styles for image capture */
+.bracket-container {
+  min-width: 800px;
+  padding: 20px;
+}
+
+@media print, (min-resolution: 200dpi) {
+  .bracket-container {
+    zoom: 0.8;
+  }
+}
+
+/* Add these styles for PDF generation */
+@media print {
+  .bracket-container {
+    background-color: black !important;
+    color: white !important;
+    page-break-inside: avoid;
+  }
+
+  .bracket-container * {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}
+
+/* Add these styles for PDF content */
+.pdf-content {
+  background-color: black;
+  color: white;
+  padding: 20px;
+  min-width: 800px;
+}
+
+.pdf-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pdf-content th,
+.pdf-content td {
+  padding: 8px;
+  text-align: left;
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
