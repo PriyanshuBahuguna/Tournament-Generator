@@ -16,7 +16,6 @@ export default function TournamentSetup() {
   const [teamEntryMethod, setTeamEntryMethod] = useState("manual")
   const [rankingType, setRankingType] = useState("higherBetter")
   const [error, setError] = useState(null)
-  // Add options state
   const [options, setOptions] = useState({
     tournamentType: "knockout",
     seedingMethod: "random",
@@ -130,7 +129,7 @@ export default function TournamentSetup() {
       return
     }
 
-    setOptions((prev) => ({ ...prev, tournamentType })) // Sync tournamentType
+    setOptions((prev) => ({ ...prev, tournamentType })) 
     setStep("customization")
     setError(null)
   }

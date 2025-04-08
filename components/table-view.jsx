@@ -3,7 +3,6 @@
 import { useMemo } from "react"
 
 export default function TableView({ matches, teams, onMatchResult }) {
-  // Sort matches by round and match number
   const sortedMatches = useMemo(() => {
     const roundOrder = {
       "Round 1": 1,
