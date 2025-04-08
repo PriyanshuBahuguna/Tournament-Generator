@@ -21,15 +21,12 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   })
 
   useEffect(() => {
-    // Simulate algorithm execution time
     const timer = setTimeout(() => {
       try {
-        // Validate teams array
         if (!Array.isArray(teams) || teams.length === 0) {
           throw new Error("No teams provided for tournament generation")
         }
 
-        // Check if all teams have an id
         const invalidTeams = teams.filter((team) => !team || team.id === undefined)
         if (invalidTeams.length > 0) {
           throw new Error("Some teams are missing required id property")
@@ -55,8 +52,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   function handleMatchResult(matchId, winnerId) {
     setMatches((prevMatches) => {
       const updatedMatches = [...prevMatches]
-
-      // Find and update the current match
       const matchIndex = updatedMatches.findIndex((m) => m.id === matchId)
       if (matchIndex >= 0) {
         updatedMatches[matchIndex] = {
@@ -65,14 +60,12 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           status: "completed",
         }
 
-        // Find the next match where this winner should go
         const currentMatch = updatedMatches[matchIndex]
         const nextMatchId = currentMatch.nextMatchId
 
         if (nextMatchId) {
           const nextMatchIndex = updatedMatches.findIndex((m) => m.id === nextMatchId)
           if (nextMatchIndex >= 0) {
-            // Determine if this winner should be team1 or team2 in the next match
             if (currentMatch.position === "top") {
               updatedMatches[nextMatchIndex] = {
                 ...updatedMatches[nextMatchIndex],
