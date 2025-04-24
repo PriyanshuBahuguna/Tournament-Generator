@@ -3,16 +3,20 @@
 import { useMemo } from "react"
 
 export default function TableView({ matches, teams, onMatchResult }) {
+  // Sort matches by round and match number
   const sortedMatches = useMemo(() => {
     const roundOrder = {
-      "Round 1": 1,
-      Quarterfinals: 2,
-      Semifinals: 3,
-      Final: 4,
+      "Round of 128": 1,
+      "Round of 64": 2,
+      "Round of 32": 3,
+      "Round of 16": 4,
+      Quarterfinals: 5,
+      Semifinals: 6,
+      Final: 7,
     }
 
     return [...matches].sort((a, b) => {
-      const roundDiff = roundOrder[a.round] - roundOrder[b.round]
+      const roundDiff = (roundOrder[a.round] || 99) - (roundOrder[b.round] || 99)
       if (roundDiff !== 0) return roundDiff
       return a.matchNumber - b.matchNumber
     })
@@ -32,7 +36,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -43,7 +47,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -54,7 +58,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -65,7 +69,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -76,7 +80,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -87,7 +91,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -98,7 +102,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
             <th
               style={{
                 textAlign: "left",
-                padding: "0.75rem 1rem",
+                padding: "0.5rem",
                 fontWeight: "500",
                 color: "#999",
                 borderBottom: "1px solid #333",
@@ -111,11 +115,11 @@ export default function TableView({ matches, teams, onMatchResult }) {
         <tbody>
           {sortedMatches.map((match) => (
             <tr key={match.id} style={{ borderBottom: "1px solid #333" }}>
-              <td style={{ padding: "0.75rem 1rem", fontWeight: "500" }}>{match.matchNumber}</td>
-              <td style={{ padding: "0.75rem 1rem" }}>{match.round}</td>
+              <td style={{ padding: "0.5rem", fontWeight: "500" }}>{match.matchNumber}</td>
+              <td style={{ padding: "0.5rem" }}>{match.round}</td>
               <td
                 style={{
-                  padding: "0.75rem 1rem",
+                  padding: "0.5rem",
                   fontWeight: match.status === "completed" && match.winnerId === match.team1Id ? "bold" : "normal",
                   color:
                     match.status === "completed"
@@ -134,20 +138,19 @@ export default function TableView({ matches, teams, onMatchResult }) {
                       display: "inline-block",
                       marginLeft: "0.5rem",
                       fontSize: "0.75rem",
-                      padding: "0.125rem 0.5rem",
-                      borderRadius: "9999px",
+                      padding: "0.125rem 0.25rem",
+                      borderRadius: "0.25rem",
                       backgroundColor: "rgba(16, 185, 129, 0.2)",
                       color: "#10b981",
-                      border: "1px solid #10b981",
                     }}
                   >
-                    Winner
+                    W
                   </span>
                 )}
               </td>
               <td
                 style={{
-                  padding: "0.75rem 1rem",
+                  padding: "0.5rem",
                   fontWeight: match.status === "completed" && match.winnerId === match.team2Id ? "bold" : "normal",
                   color:
                     match.status === "completed"
@@ -166,40 +169,42 @@ export default function TableView({ matches, teams, onMatchResult }) {
                       display: "inline-block",
                       marginLeft: "0.5rem",
                       fontSize: "0.75rem",
-                      padding: "0.125rem 0.5rem",
-                      borderRadius: "9999px",
+                      padding: "0.125rem 0.25rem",
+                      borderRadius: "0.25rem",
                       backgroundColor: "rgba(16, 185, 129, 0.2)",
                       color: "#10b981",
-                      border: "1px solid #10b981",
                     }}
                   >
-                    Winner
+                    W
                   </span>
                 )}
               </td>
-              <td style={{ padding: "0.75rem 1rem" }}>Venue {match.venue}</td>
-              <td style={{ padding: "0.75rem 1rem" }}>
+              <td style={{ padding: "0.5rem" }}>Venue {match.venue}</td>
+              <td style={{ padding: "0.5rem" }}>
                 <span
                   style={{
                     display: "inline-block",
                     fontSize: "0.75rem",
-                    padding: "0.125rem 0.5rem",
-                    borderRadius: "9999px",
+                    padding: "0.125rem 0.25rem",
+                    borderRadius: "0.25rem",
                     backgroundColor:
-                      match.status === "completed" ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.05)",
-                    color: match.status === "completed" ? "white" : "#999",
-                    border: "1px solid #333",
+                      match.status === "completed"
+                        ? "rgba(16, 185, 129, 0.1)"
+                        : match.status === "cancelled"
+                          ? "rgba(239, 68, 68, 0.1)"
+                          : "#333",
+                    color: match.status === "completed" ? "#10b981" : match.status === "cancelled" ? "#ef4444" : "#999",
                   }}
                 >
-                  {match.status === "completed" ? "Completed" : "Pending"}
+                  {match.status === "completed" ? "Completed" : match.status === "cancelled" ? "Cancelled" : "Pending"}
                 </span>
               </td>
-              <td style={{ padding: "0.75rem 1rem" }}>
-                {match.status !== "completed" && match.team1Id && match.team2Id && (
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
+              <td style={{ padding: "0.5rem" }}>
+                {match.status !== "completed" && match.status !== "cancelled" && match.team1Id && match.team2Id && (
+                  <div style={{ display: "flex", gap: "0.25rem" }}>
                     <button
                       style={{
-                        fontSize: "0.875rem",
+                        fontSize: "0.75rem",
                         padding: "0.25rem 0.5rem",
                         backgroundColor: "transparent",
                         color: "white",
@@ -209,11 +214,11 @@ export default function TableView({ matches, teams, onMatchResult }) {
                       }}
                       onClick={() => onMatchResult(match.id, match.team1Id)}
                     >
-                      {getTeamName(match.team1Id)} wins
+                      {getTeamName(match.team1Id)}
                     </button>
                     <button
                       style={{
-                        fontSize: "0.875rem",
+                        fontSize: "0.75rem",
                         padding: "0.25rem 0.5rem",
                         backgroundColor: "transparent",
                         color: "white",
@@ -223,7 +228,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
                       }}
                       onClick={() => onMatchResult(match.id, match.team2Id)}
                     >
-                      {getTeamName(match.team2Id)} wins
+                      {getTeamName(match.team2Id)}
                     </button>
                   </div>
                 )}
@@ -235,4 +240,3 @@ export default function TableView({ matches, teams, onMatchResult }) {
     </div>
   )
 }
-
