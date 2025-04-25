@@ -1,12 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ChevronLeft, Copy, FileImage, FileIcon as FilePdf, AlertCircle, UserX, Calendar, List } from "lucide-react"
+import { ChevronLeft, Copy, AlertCircle, UserX, Calendar, List } from "lucide-react"
 import { generateTournament } from "@/lib/tournament-generator"
 import { dynamicReseeding } from "@/lib/algorithms/reseeding/dynamicReseeding"
-import { exportAsImage, exportAsPDF } from "@/lib/export-utils"
 import TableView from "@/components/table-view"
-import Script from "next/script"
 
 export default function FixtureDisplay({ teams, options, rankingType, onBack }) {
   const [matches, setMatches] = useState([])
@@ -16,10 +14,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   const [withdrawnTeams, setWithdrawnTeams] = useState(options.withdrawnTeams || [])
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const fixtureRef = useRef(null)
-  const [librariesLoaded, setLibrariesLoaded] = useState({
-    html2canvas: false,
-    jspdf: false,
-  })
   const [activeTab, setActiveTab] = useState("table")
 
   // Add schedule state
@@ -46,10 +40,23 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           withdrawnTeams: withdrawnTeams,
         }
 
-        const { matches, insights, schedule } = generateTournament(teams, updatedOptions, rankingType)
-        setMatches(matches)
+        const {
+          matches: generatedMatches,
+          insights,
+          schedule: generatedSchedule,
+        } = generateTournament(teams, updatedOptions, rankingType)
+
+        // Check if matches were generated successfully
+        if (!generatedMatches || generatedMatches.length === 0) {
+          throw new Error("Failed to generate matches")
+        }
+
+        // Log the round names to debug
+        console.log("Generated rounds:", [...new Set(generatedMatches.map((m) => m.round))])
+
+        setMatches(generatedMatches)
         setAlgorithmInsights(insights)
-        setSchedule(schedule || [])
+        setSchedule(generatedSchedule || [])
         setError(null)
       } catch (err) {
         console.error("Error generating tournament:", err)
@@ -106,23 +113,32 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   }
 
   function handleTeamWithdrawal(teamId) {
-    // Add team to withdrawn teams
-    const newWithdrawnTeams = [...withdrawnTeams, teamId]
-    setWithdrawnTeams(newWithdrawnTeams)
+    try {
+      // Add team to withdrawn teams
+      const newWithdrawnTeams = [...withdrawnTeams, teamId]
+      setWithdrawnTeams(newWithdrawnTeams)
 
-    // Apply dynamic reseeding
-    const reseedInsight = "Dynamic Reseeding: Applied during tournament"
+      // Apply dynamic reseeding
+      const reseedInsight = "Dynamic Reseeding: Applied during tournament"
 
-    if (!algorithmInsights.includes(reseedInsight)) {
-      setAlgorithmInsights([...algorithmInsights, reseedInsight])
+      if (!algorithmInsights.includes(reseedInsight)) {
+        setAlgorithmInsights([...algorithmInsights, reseedInsight])
+      }
+
+      // Apply reseeding algorithm
+      const updatedMatches = dynamicReseeding(matches, teams, newWithdrawnTeams, rankingType)
+
+      // Log the round names after reseeding to debug
+      console.log("Reseeded rounds:", [...new Set(updatedMatches.map((m) => m.round))])
+
+      setMatches(updatedMatches)
+    } catch (error) {
+      console.error("Error during team withdrawal:", error)
+      setAlgorithmInsights([...algorithmInsights, "Error: Team withdrawal failed"])
+    } finally {
+      // Close the modal
+      setShowWithdrawModal(false)
     }
-
-    // Apply reseeding algorithm
-    const updatedMatches = dynamicReseeding(matches, teams, newWithdrawnTeams, rankingType)
-    setMatches(updatedMatches)
-
-    // Close the modal
-    setShowWithdrawModal(false)
   }
 
   function copyToClipboard() {
@@ -139,35 +155,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
       .writeText(textData)
       .then(() => alert("Fixture copied to clipboard"))
       .catch((err) => console.error("Failed to copy: ", err))
-  }
-
-  function handleExportAsImage() {
-    if (!librariesLoaded.html2canvas) {
-      alert("Export library is still loading. Please try again in a moment.")
-      return
-    }
-
-    if (fixtureRef.current) {
-      exportAsImage(fixtureRef.current, `tournament-fixture-${new Date().toISOString().slice(0, 10)}.png`)
-    }
-  }
-
-  function handleExportAsPDF() {
-    if (!librariesLoaded.html2canvas || !librariesLoaded.jspdf) {
-      alert("Export libraries are still loading. Please try again in a moment.")
-      return
-    }
-
-    if (fixtureRef.current) {
-      exportAsPDF(fixtureRef.current, `tournament-fixture-${new Date().toISOString().slice(0, 10)}.pdf`)
-    }
-  }
-
-  function handleLibraryLoad(library) {
-    setLibrariesLoaded((prev) => ({
-      ...prev,
-      [library]: true,
-    }))
   }
 
   function formatDate(date) {
@@ -187,18 +174,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
 
   return (
     <>
-      {/* Load required libraries */}
-      <Script
-        src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"
-        onLoad={() => handleLibraryLoad("html2canvas")}
-        strategy="lazyOnload"
-      />
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        onLoad={() => handleLibraryLoad("jspdf")}
-        strategy="lazyOnload"
-      />
-
       {/* Team Withdrawal Modal */}
       {showWithdrawModal && (
         <div
@@ -712,61 +687,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
               >
                 <Copy size={16} />
                 Copy
-              </button>
-
-              <button
-                onClick={handleExportAsImage}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "transparent",
-                  color: "white",
-                  borderRadius: "0.25rem",
-                  fontWeight: "500",
-                  cursor:
-                    isGenerating || matches.length === 0 || !librariesLoaded.html2canvas ? "not-allowed" : "pointer",
-                  borderWidth: "1px",
-                  borderStyle: "solid",
-                  borderColor: "#333",
-                  opacity: isGenerating || matches.length === 0 || !librariesLoaded.html2canvas ? "0.5" : "1",
-                }}
-                disabled={isGenerating || matches.length === 0 || !librariesLoaded.html2canvas}
-              >
-                <FileImage size={16} />
-                Image
-              </button>
-
-              <button
-                onClick={handleExportAsPDF}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "transparent",
-                  color: "white",
-                  borderRadius: "0.25rem",
-                  fontWeight: "500",
-                  cursor:
-                    isGenerating || matches.length === 0 || !librariesLoaded.html2canvas || !librariesLoaded.jspdf
-                      ? "not-allowed"
-                      : "pointer",
-                  borderWidth: "1px",
-                  borderStyle: "solid",
-                  borderColor: "#333",
-                  opacity:
-                    isGenerating || matches.length === 0 || !librariesLoaded.html2canvas || !librariesLoaded.jspdf
-                      ? "0.5"
-                      : "1",
-                }}
-                disabled={
-                  isGenerating || matches.length === 0 || !librariesLoaded.html2canvas || !librariesLoaded.jspdf
-                }
-              >
-                <FilePdf size={16} />
-                PDF
               </button>
             </div>
           </div>
