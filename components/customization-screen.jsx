@@ -85,8 +85,7 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                 }}
               >
                 <option value="random">Random Seeding</option>
-                <option value="mergeSort">Ranked Seeding (Merge Sort)</option>
-                <option value="quickSort">Ranked Seeding (Quick Sort)</option>
+                <option value="sortedSeeding">Ranked Seeding</option>
               </select>
             </div>
 
