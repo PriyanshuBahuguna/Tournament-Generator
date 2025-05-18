@@ -147,7 +147,7 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
         (match) =>
           `Match ${match.id}: ${teams.find((t) => t?.id === match.team1Id)?.name || "TBD"} vs ${
             teams.find((t) => t?.id === match.team2Id)?.name || "TBD"
-          } (${match.round}, Venue: ${match.venue})`,
+          } (${match.round}, Venue: ${match.venueName})`,
       )
       .join("\n")
 
@@ -590,7 +590,7 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                                             {day.matches.map((match, idx) => (
                                               <div key={idx} style={{ marginBottom: "0.25rem" }}>
                                                 {getTeamName(match.team1Id)} vs {getTeamName(match.team2Id)}
-                                                {match.venue && <span> (Venue {match.venue})</span>}
+                                                {match.venueName && <span> ({match.venueName})</span>}
                                               </div>
                                             ))}
                                           </div>

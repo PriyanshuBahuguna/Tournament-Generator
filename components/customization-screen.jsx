@@ -31,9 +31,44 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
     }))
   }
 
+  function handleVenueNameChange(index, value) {
+    setOptions((prev) => {
+      const newVenueNames = [...(prev.venueNames || [])]
+      newVenueNames[index] = value || `Venue ${index + 1}`
+      return { ...prev, venueNames: newVenueNames }
+    })
+  }
+
   function generateFixture() {
     setStep("display")
   }
+
+  // Generate venue name inputs based on numVenues
+  const venueInputs = Array.from({ length: options.numVenues }, (_, i) => (
+    <div key={i} style={{ marginBottom: "0.5rem" }}>
+      <label
+        style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", marginBottom: "0.25rem" }}
+        htmlFor={`venueName${i}`}
+      >
+        Venue {i + 1} Name
+      </label>
+      <input
+        id={`venueName${i}`}
+        type="text"
+        placeholder={`Venue ${i + 1}`}
+        value={options.venueNames?.[i] || ""}
+        onChange={(e) => handleVenueNameChange(i, e.target.value)}
+        style={{
+          width: "100%",
+          padding: "0.5rem",
+          backgroundColor: "#222",
+          border: "1px solid #333",
+          borderRadius: "0.25rem",
+          color: "white",
+        }}
+      />
+    </div>
+  ))
 
   return (
     <div
@@ -166,7 +201,18 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                 type="number"
                 min="1"
                 value={options.numVenues}
-                onChange={(e) => handleOptionChange("numVenues", Number.parseInt(e.target.value) || 1)}
+                onChange={(e) => {
+                  const newNumVenues = Number.parseInt(e.target.value) || 1
+                  handleOptionChange("numVenues", newNumVenues)
+                  // Adjust venueNames array length
+                  setOptions((prev) => {
+                    const newVenueNames = (prev.venueNames || []).slice(0, newNumVenues)
+                    for (let i = newVenueNames.length; i < newNumVenues; i++) {
+                      newVenueNames[i] = `Venue ${i + 1}`
+                    }
+                    return { ...prev, venueNames: newVenueNames }
+                  })
+                }}
                 style={{
                   width: "100%",
                   padding: "0.5rem",
@@ -177,6 +223,13 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                 }}
               />
             </div>
+          </div>
+
+          <div style={{ marginTop: "1rem" }}>
+            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", marginBottom: "0.5rem" }}>
+              Venue Names
+            </label>
+            {venueInputs}
           </div>
         </div>
 
