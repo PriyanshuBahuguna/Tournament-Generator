@@ -15,25 +15,23 @@ export default function TournamentSetup() {
   const [rankingType, setRankingType] = useState("higherBetter")
   const [error, setError] = useState(null)
 
-  // Add options state
   const [options, setOptions] = useState({
     seedingMethod: "random",
     schedulingMethod: "basic",
     numVenues: 1,
     avoidTopTeamClashes: false,
     enableDynamicReseeding: false,
-    maxMatchesPerDay: 4,
+    maxMatchesPerDay: 2,
     withdrawnTeams: [],
     startDate: "",
     endDate: "",
     enableRestDays: false,
-    restDayInterval: 3,
+    restDayInterval: 2,
   })
 
   useEffect(() => {
     generateEmptyTeams(numTeams)
 
-    // Set default dates (today and 2 weeks from now)
     const today = new Date()
     const twoWeeksLater = new Date()
     twoWeeksLater.setDate(today.getDate() + 14)
