@@ -14,7 +14,6 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
     setEnableDates(enabled)
 
     if (!enabled) {
-      // Clear dates in options if disabled
       setOptions((prev) => ({
         ...prev,
         startDate: "",
@@ -43,7 +42,6 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
     setStep("display")
   }
 
-  // Generate venue name inputs based on numVenues
   const venueInputs = Array.from({ length: options.numVenues }, (_, i) => (
     <div key={i} style={{ marginBottom: "0.5rem" }}>
       <label
@@ -204,7 +202,6 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                 onChange={(e) => {
                   const newNumVenues = Number.parseInt(e.target.value) || 1
                   handleOptionChange("numVenues", newNumVenues)
-                  // Adjust venueNames array length
                   setOptions((prev) => {
                     const newVenueNames = (prev.venueNames || []).slice(0, newNumVenues)
                     for (let i = newVenueNames.length; i < newNumVenues; i++) {
