@@ -14,6 +14,7 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
     setEnableDates(enabled)
 
     if (!enabled) {
+      // Clear dates in options if disabled
       setOptions((prev) => ({
         ...prev,
         startDate: "",
@@ -84,7 +85,8 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                 }}
               >
                 <option value="random">Random Seeding</option>
-                <option value="sortedSeeding">Ranked Seeding</option>
+                <option value="mergeSort">Ranked Seeding (Merge Sort)</option>
+                <option value="manual">Manual Seeding (Keep Input Order)</option>
               </select>
             </div>
 
@@ -110,6 +112,11 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                   Avoid early top-team clashes
                 </label>
               </div>
+              {options.seedingMethod === "manual" && options.avoidTopTeamClashes && (
+                <div style={{ fontSize: "0.75rem", color: "#eab308", marginTop: "0.5rem" }}>
+                  Note: Top team clash avoidance is not applied with Manual seeding
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -149,7 +156,6 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
               >
                 <option value="basic">Basic Scheduling</option>
                 <option value="graphColoring">Graph Coloring</option>
-                <option value="hamiltonianPath">Hamiltonian Path</option>
               </select>
             </div>
 

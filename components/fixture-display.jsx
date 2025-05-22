@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ChevronLeft, Copy, AlertCircle, UserX, Calendar, List } from "lucide-react"
+import { ChevronLeft, Copy, AlertCircle, UserX, Calendar, List, Trophy } from "lucide-react"
 import { generateTournament } from "@/lib/tournament-generator"
 import { dynamicReseeding } from "@/lib/algorithms/reseeding/dynamicReseeding"
+import { postponeMatch } from "@/lib/algorithms/scheduling/postponement"
 import TableView from "@/components/table-view"
+import BracketView from "@/components/bracket-view"
 
 export default function FixtureDisplay({ teams, options, rankingType, onBack }) {
   const [matches, setMatches] = useState([])
@@ -13,23 +15,34 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   const [error, setError] = useState(null)
   const [withdrawnTeams, setWithdrawnTeams] = useState(options.withdrawnTeams || [])
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [showPostponeModal, setShowPostponeModal] = useState(false)
+  const [selectedMatchId, setSelectedMatchId] = useState(null)
   const fixtureRef = useRef(null)
   const [activeTab, setActiveTab] = useState("table")
 
+  // Add schedule state
   const [schedule, setSchedule] = useState([])
+  // Add state to track postponed matches with their original and new dates
+  const [postponedMatches, setPostponedMatches] = useState({})
+  // Add state to track original schedule days for postponed matches
+  const [originalScheduleDays, setOriginalScheduleDays] = useState({})
 
   useEffect(() => {
+    // Simulate algorithm execution time
     const timer = setTimeout(() => {
       try {
+        // Validate teams array
         if (!Array.isArray(teams) || teams.length === 0) {
           throw new Error("No teams provided for tournament generation")
         }
 
+        // Check if all teams have an id
         const invalidTeams = teams.filter((team) => !team || team.id === undefined)
         if (invalidTeams.length > 0) {
           throw new Error("Some teams are missing required id property")
         }
 
+        // Update options with current withdrawn teams
         const updatedOptions = {
           ...options,
           withdrawnTeams: withdrawnTeams,
@@ -41,14 +54,25 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           schedule: generatedSchedule,
         } = generateTournament(teams, updatedOptions, rankingType)
 
+        // Check if matches were generated successfully
         if (!generatedMatches || generatedMatches.length === 0) {
           throw new Error("Failed to generate matches")
         }
+
+        // Log the round names to debug
         console.log("Generated rounds:", [...new Set(generatedMatches.map((m) => m.round))])
+
+        // Ensure dates in schedule are Date objects
+        const processedSchedule = generatedSchedule
+          ? generatedSchedule.map((day) => ({
+              ...day,
+              date: new Date(day.date),
+            }))
+          : []
 
         setMatches(generatedMatches)
         setAlgorithmInsights(insights)
-        setSchedule(generatedSchedule || [])
+        setSchedule(processedSchedule)
         setError(null)
       } catch (err) {
         console.error("Error generating tournament:", err)
@@ -68,6 +92,7 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
     setMatches((prevMatches) => {
       const updatedMatches = [...prevMatches]
 
+      // Find and update the current match
       const matchIndex = updatedMatches.findIndex((m) => m.id === matchId)
       if (matchIndex >= 0) {
         updatedMatches[matchIndex] = {
@@ -76,12 +101,14 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           status: "completed",
         }
 
+        // Find the next match where this winner should go
         const currentMatch = updatedMatches[matchIndex]
         const nextMatchId = currentMatch.nextMatchId
 
         if (nextMatchId) {
           const nextMatchIndex = updatedMatches.findIndex((m) => m.id === nextMatchId)
           if (nextMatchIndex >= 0) {
+            // Determine if this winner should be team1 or team2 in the next match
             if (currentMatch.position === "top") {
               updatedMatches[nextMatchIndex] = {
                 ...updatedMatches[nextMatchIndex],
@@ -103,17 +130,21 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
 
   function handleTeamWithdrawal(teamId) {
     try {
+      // Add team to withdrawn teams
       const newWithdrawnTeams = [...withdrawnTeams, teamId]
       setWithdrawnTeams(newWithdrawnTeams)
 
+      // Apply dynamic reseeding
       const reseedInsight = "Dynamic Reseeding: Applied during tournament"
 
       if (!algorithmInsights.includes(reseedInsight)) {
         setAlgorithmInsights([...algorithmInsights, reseedInsight])
       }
 
+      // Apply reseeding algorithm
       const updatedMatches = dynamicReseeding(matches, teams, newWithdrawnTeams, rankingType)
 
+      // Log the round names after reseeding to debug
       console.log("Reseeded rounds:", [...new Set(updatedMatches.map((m) => m.round))])
 
       setMatches(updatedMatches)
@@ -121,7 +152,96 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
       console.error("Error during team withdrawal:", error)
       setAlgorithmInsights([...algorithmInsights, "Error: Team withdrawal failed"])
     } finally {
+      // Close the modal
       setShowWithdrawModal(false)
+    }
+  }
+
+  function handlePostponeMatchClick(matchId) {
+    setSelectedMatchId(matchId)
+    setShowPostponeModal(true)
+  }
+
+  function handlePostponeMatch() {
+    if (!selectedMatchId) return
+
+    try {
+      // Find the original schedule day for this match
+      const originalDay = schedule.find((day) => !day.isRestDay && day.matches.some((m) => m.id === selectedMatchId))
+
+      // Store the original schedule day before postponement
+      if (originalDay) {
+        const originalDate = new Date(originalDay.date)
+        const formattedOriginalDate = originalDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+
+        setOriginalScheduleDays((prev) => ({
+          ...prev,
+          [selectedMatchId]: {
+            date: originalDate,
+            formattedDate: formattedOriginalDate,
+            round: originalDay.round,
+          },
+        }))
+      }
+
+      // Apply postponement
+      const { matches: updatedMatches, schedule: updatedSchedule } = postponeMatch(
+        selectedMatchId,
+        matches,
+        schedule,
+        teams,
+        options,
+      )
+
+      // Find the new date for the postponed match
+      const newScheduleDay = updatedSchedule.find(
+        (day) => !day.isRestDay && day.matches.some((m) => m.id === selectedMatchId && m.status === "postponed"),
+      )
+
+      if (newScheduleDay) {
+        const newDate = new Date(newScheduleDay.date)
+        const formattedDate = newDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+
+        // Store the postponed match with its new date
+        setPostponedMatches((prev) => ({
+          ...prev,
+          [selectedMatchId]: formattedDate,
+        }))
+
+        // Check if the date actually changed
+        if (originalDay && new Date(originalDay.date).toDateString() === newDate.toDateString()) {
+          alert("Warning: Could not find a different date for this match. Please check the schedule.")
+        } else {
+          // Show notification
+          alert(`Match has been rescheduled to ${formattedDate}`)
+        }
+      }
+
+      setMatches(updatedMatches)
+      setSchedule(updatedSchedule)
+
+      // Add insight about postponement
+      const postponeInsight = "Match Postponement: Applied scheduling algorithm"
+      if (!algorithmInsights.includes(postponeInsight)) {
+        setAlgorithmInsights([...algorithmInsights, postponeInsight])
+      }
+    } catch (error) {
+      console.error("Error during match postponement:", error)
+      setAlgorithmInsights([...algorithmInsights, "Error: Match postponement failed"])
+    } finally {
+      // Close the modal
+      setShowPostponeModal(false)
+      setSelectedMatchId(null)
     }
   }
 
@@ -131,7 +251,7 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
         (match) =>
           `Match ${match.id}: ${teams.find((t) => t?.id === match.team1Id)?.name || "TBD"} vs ${
             teams.find((t) => t?.id === match.team2Id)?.name || "TBD"
-          } (${match.round}, Venue: ${match.venueName})`,
+          } (${match.round}, Venue: ${match.venue})`,
       )
       .join("\n")
 
@@ -142,7 +262,7 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   }
 
   function formatDate(date) {
-    return date.toLocaleDateString("en-US", {
+    return new Date(date).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -154,6 +274,10 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
     if (!teamId) return "TBD"
     const team = teams.find((t) => t && t.id === teamId)
     return team ? team.name : "Unknown Team"
+  }
+
+  function getMatchById(matchId) {
+    return matches.find((m) => m.id === matchId) || null
   }
 
   return (
@@ -233,6 +357,115 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                 onClick={() => setShowWithdrawModal(false)}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPostponeModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#111",
+              borderRadius: "0.5rem",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "#333",
+              padding: "1rem",
+              width: "90%",
+              maxWidth: "30rem",
+            }}
+          >
+            <h3 style={{ marginBottom: "1rem" }}>Postpone Match</h3>
+            {selectedMatchId && (
+              <div style={{ marginBottom: "1rem" }}>
+                <p>Are you sure you want to postpone this match?</p>
+                <div
+                  style={{
+                    backgroundColor: "#222",
+                    padding: "0.75rem",
+                    borderRadius: "0.25rem",
+                    marginTop: "0.75rem",
+                  }}
+                >
+                  {(() => {
+                    const match = getMatchById(selectedMatchId)
+                    if (match) {
+                      return (
+                        <>
+                          <p>
+                            <strong>Round:</strong> {match.round}
+                          </p>
+                          <p>
+                            <strong>Teams:</strong> {getTeamName(match.team1Id)} vs {getTeamName(match.team2Id)}
+                          </p>
+                        </>
+                      )
+                    }
+                    return <p>Match not found</p>
+                  })()}
+                </div>
+                <p style={{ marginTop: "0.75rem", fontSize: "0.875rem", color: "#999" }}>
+                  The system will find the best available date for this match while ensuring both teams have adequate
+                  rest days.
+                </p>
+                <div
+                  style={{
+                    marginTop: "0.75rem",
+                    padding: "0.75rem",
+                    backgroundColor: "rgba(234, 179, 8, 0.1)",
+                    borderRadius: "0.25rem",
+                    borderLeft: "3px solid #eab308",
+                    color: "#eab308",
+                  }}
+                >
+                  <p style={{ fontWeight: "bold" }}>New Date Found</p>
+                  <p>The match will be rescheduled to the next available date in the tournament calendar.</p>
+                </div>
+              </div>
+            )}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+              <button
+                style={{
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "transparent",
+                  color: "white",
+                  borderRadius: "0.25rem",
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "#333",
+                  cursor: "pointer",
+                }}
+                onClick={() => setShowPostponeModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                style={{
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "#eab308",
+                  color: "black",
+                  borderRadius: "0.25rem",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onClick={handlePostponeMatch}
+              >
+                Confirm Postponement
               </button>
             </div>
           </div>
@@ -396,8 +629,15 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                   </div>
                 ) : (
                   <>
-                    {/* Team Withdrawal Button */}
-                    <div style={{ marginBottom: "1rem" }}>
+                    {/* Team Withdrawal and Match Postponement Buttons */}
+                    <div
+                      style={{
+                        marginBottom: "1rem",
+                        display: "flex",
+                        gap: "0.5rem",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <button
                         onClick={() => setShowWithdrawModal(true)}
                         style={{
@@ -417,8 +657,17 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                         <UserX size={16} />
                         Withdraw Team
                       </button>
+
                       {withdrawnTeams.length > 0 && (
-                        <div style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#999" }}>
+                        <div
+                          style={{
+                            marginLeft: "0.5rem",
+                            fontSize: "0.875rem",
+                            color: "#999",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
                           {withdrawnTeams.length} team(s) withdrawn
                         </div>
                       )}
@@ -459,6 +708,25 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                             alignItems: "center",
                             gap: "0.5rem",
                             padding: "0.75rem 1rem",
+                            backgroundColor: activeTab === "bracket" ? "#222" : "transparent",
+                            color: activeTab === "bracket" ? "white" : "#999",
+                            borderWidth: "0",
+                            borderBottomWidth: activeTab === "bracket" ? "2px" : "0",
+                            borderBottomStyle: activeTab === "bracket" ? "solid" : "none",
+                            borderBottomColor: activeTab === "bracket" ? "white" : "transparent",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => setActiveTab("bracket")}
+                        >
+                          <Trophy size={16} />
+                          Bracket View
+                        </button>
+                        <button
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            padding: "0.75rem 1rem",
                             backgroundColor: activeTab === "schedule" ? "#222" : "transparent",
                             color: activeTab === "schedule" ? "white" : "#999",
                             borderWidth: "0",
@@ -487,7 +755,22 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                       }}
                     >
                       {activeTab === "table" && (
-                        <TableView matches={matches} teams={teams} onMatchResult={handleMatchResult} />
+                        <TableView
+                          matches={matches}
+                          teams={teams}
+                          onMatchResult={handleMatchResult}
+                          onPostponeMatch={handlePostponeMatchClick}
+                          postponedMatches={postponedMatches}
+                        />
+                      )}
+
+                      {activeTab === "bracket" && (
+                        <BracketView
+                          matches={matches}
+                          teams={teams}
+                          onMatchResult={handleMatchResult}
+                          postponedMatches={postponedMatches}
+                        />
                       )}
 
                       {activeTab === "schedule" && schedule.length > 0 && (
@@ -560,6 +843,19 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                                         >
                                           Rest Day
                                         </span>
+                                      ) : day.round.includes("Postponed") ? (
+                                        <span
+                                          style={{
+                                            display: "inline-block",
+                                            fontSize: "0.75rem",
+                                            padding: "0.125rem 0.25rem",
+                                            borderRadius: "0.25rem",
+                                            backgroundColor: "rgba(234, 179, 8, 0.1)",
+                                            color: "#eab308",
+                                          }}
+                                        >
+                                          {day.round}
+                                        </span>
                                       ) : (
                                         day.round
                                       )}
@@ -571,12 +867,65 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
                                         <div>
                                           <span>{day.matches.length} matches</span>
                                           <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#999" }}>
-                                            {day.matches.map((match, idx) => (
-                                              <div key={idx} style={{ marginBottom: "0.25rem" }}>
-                                                {getTeamName(match.team1Id)} vs {getTeamName(match.team2Id)}
-                                                {match.venueName && <span> ({match.venueName})</span>}
-                                              </div>
-                                            ))}
+                                            {day.matches.map((match, idx) => {
+                                              // Check if this is a postponed match
+                                              const isPostponed = match.status === "postponed"
+                                              const originalScheduleInfo = originalScheduleDays[match.id]
+
+                                              return (
+                                                <div key={idx} style={{ marginBottom: "0.25rem" }}>
+                                                  {getTeamName(match.team1Id)} vs {getTeamName(match.team2Id)}
+                                                  {match.venue && <span> (Venue {match.venue})</span>}
+                                                  {/* Show postponed status */}
+                                                  {isPostponed && (
+                                                    <span
+                                                      style={{
+                                                        marginLeft: "0.5rem",
+                                                        fontSize: "0.7rem",
+                                                        padding: "0.1rem 0.25rem",
+                                                        borderRadius: "0.25rem",
+                                                        backgroundColor: "rgba(234, 179, 8, 0.1)",
+                                                        color: "#eab308",
+                                                      }}
+                                                    >
+                                                      Postponed
+                                                    </span>
+                                                  )}
+                                                  {/* Show original date for postponed matches */}
+                                                  {isPostponed && originalScheduleInfo && (
+                                                    <div
+                                                      style={{
+                                                        marginTop: "0.25rem",
+                                                        marginLeft: "1rem",
+                                                        fontSize: "0.7rem",
+                                                        padding: "0.1rem 0.25rem",
+                                                        borderRadius: "0.25rem",
+                                                        backgroundColor: "rgba(234, 179, 8, 0.1)",
+                                                        color: "#eab308",
+                                                      }}
+                                                    >
+                                                      Originally scheduled: {originalScheduleInfo.formattedDate}
+                                                    </div>
+                                                  )}
+                                                  {/* Show new date for postponed matches */}
+                                                  {isPostponed && postponedMatches[match.id] && (
+                                                    <div
+                                                      style={{
+                                                        marginTop: "0.25rem",
+                                                        marginLeft: "1rem",
+                                                        fontSize: "0.7rem",
+                                                        padding: "0.1rem 0.25rem",
+                                                        borderRadius: "0.25rem",
+                                                        backgroundColor: "rgba(59, 130, 246, 0.1)",
+                                                        color: "#3b82f6",
+                                                      }}
+                                                    >
+                                                      Rescheduled to: {postponedMatches[match.id]}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )
+                                            })}
                                           </div>
                                         </div>
                                       )}
