@@ -107,7 +107,7 @@ export default function TournamentSetup() {
           .map((line, index) => {
             const [name, rankingStr] = line.split(",")
             return {
-              id: index + 1, // Ensure each team has a unique ID
+              id: index + 1, 
               name: name?.trim() || `Team ${index + 1}`,
               ranking: Number.parseInt(rankingStr?.trim() || "0") || 0,
             }
@@ -134,7 +134,6 @@ export default function TournamentSetup() {
       return
     }
 
-    // Validate that all teams have an ID
     const invalidTeams = teams.filter((team) => !team || team.id === undefined)
     if (invalidTeams.length > 0) {
       setError("Some teams are missing required ID. Please regenerate teams or fix the data.")
