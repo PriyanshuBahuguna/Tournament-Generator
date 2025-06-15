@@ -19,13 +19,13 @@ export default function TournamentSetup() {
     seedingMethod: "random",
     schedulingMethod: "basic",
     numVenues: 1,
-    avoidTopTeamClashes: false,
-    enableDynamicReseeding: false,
+    avoidTopTeamClashes: true,
+    enableDynamicReseeding: true,
     maxMatchesPerDay: 2,
     withdrawnTeams: [],
     startDate: "",
     endDate: "",
-    enableRestDays: false,
+    enableRestDays: true,
     restDayInterval: 2,
   })
 

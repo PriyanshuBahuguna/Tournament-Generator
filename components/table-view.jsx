@@ -1,8 +1,10 @@
 "use client"
 
 import { useMemo } from "react"
+import { Clock } from "lucide-react"
 
-export default function TableView({ matches, teams, onMatchResult }) {
+export default function TableView({ matches, teams, onMatchResult, onPostponeMatch, postponedMatches = {} }) {
+  // Sort matches by round and match number
   const sortedMatches = useMemo(() => {
     const roundOrder = {
       "Round of 128": 1,
@@ -127,7 +129,9 @@ export default function TableView({ matches, teams, onMatchResult }) {
                         : match.team1Id
                           ? "#ef4444"
                           : "white"
-                      : "white",
+                      : match.status === "postponed"
+                        ? "#eab308"
+                        : "white",
                 }}
               >
                 {getTeamName(match.team1Id)}
@@ -146,6 +150,21 @@ export default function TableView({ matches, teams, onMatchResult }) {
                     W
                   </span>
                 )}
+                {match.status === "postponed" && (
+                  <span
+                    style={{
+                      display: "inline-block",
+                      marginLeft: "0.5rem",
+                      fontSize: "0.75rem",
+                      padding: "0.125rem 0.25rem",
+                      borderRadius: "0.25rem",
+                      backgroundColor: "rgba(234, 179, 8, 0.2)",
+                      color: "#eab308",
+                    }}
+                  >
+                    Postponed
+                  </span>
+                )}
               </td>
               <td
                 style={{
@@ -158,7 +177,9 @@ export default function TableView({ matches, teams, onMatchResult }) {
                         : match.team2Id
                           ? "#ef4444"
                           : "white"
-                      : "white",
+                      : match.status === "postponed"
+                        ? "#eab308"
+                        : "white",
                 }}
               >
                 {getTeamName(match.team2Id)}
@@ -178,7 +199,7 @@ export default function TableView({ matches, teams, onMatchResult }) {
                   </span>
                 )}
               </td>
-              <td style={{ padding: "0.5rem" }}>{match.venueName}</td>
+              <td style={{ padding: "0.5rem" }}>Venue {match.venue}</td>
               <td style={{ padding: "0.5rem" }}>
                 <span
                   style={{
@@ -191,16 +212,36 @@ export default function TableView({ matches, teams, onMatchResult }) {
                         ? "rgba(16, 185, 129, 0.1)"
                         : match.status === "cancelled"
                           ? "rgba(239, 68, 68, 0.1)"
-                          : "#333",
-                    color: match.status === "completed" ? "#10b981" : match.status === "cancelled" ? "#ef4444" : "#999",
+                          : match.status === "postponed"
+                            ? "rgba(234, 179, 8, 0.1)"
+                            : "#333",
+                    color:
+                      match.status === "completed"
+                        ? "#10b981"
+                        : match.status === "cancelled"
+                          ? "#ef4444"
+                          : match.status === "postponed"
+                            ? "#eab308"
+                            : "#999",
                   }}
                 >
-                  {match.status === "completed" ? "Completed" : match.status === "cancelled" ? "Cancelled" : "Pending"}
+                  {match.status === "completed"
+                    ? "Completed"
+                    : match.status === "cancelled"
+                      ? "Cancelled"
+                      : match.status === "postponed"
+                        ? "Postponed"
+                        : "Pending"}
                 </span>
+                {match.status === "postponed" && postponedMatches[match.id] && (
+                  <div style={{ marginTop: "0.25rem", fontSize: "0.75rem", color: "#3b82f6" }}>
+                    Rescheduled to: {postponedMatches[match.id]}
+                  </div>
+                )}
               </td>
               <td style={{ padding: "0.5rem" }}>
                 {match.status !== "completed" && match.status !== "cancelled" && match.team1Id && match.team2Id && (
-                  <div style={{ display: "flex", gap: "0.25rem" }}>
+                  <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
                     <button
                       style={{
                         fontSize: "0.75rem",
@@ -229,6 +270,26 @@ export default function TableView({ matches, teams, onMatchResult }) {
                     >
                       {getTeamName(match.team2Id)}
                     </button>
+                    {match.status !== "postponed" && (
+                      <button
+                        style={{
+                          fontSize: "0.75rem",
+                          padding: "0.25rem 0.5rem",
+                          backgroundColor: "rgba(234, 179, 8, 0.1)",
+                          color: "#eab308",
+                          borderRadius: "0.25rem",
+                          border: "1px solid #eab308",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                        }}
+                        onClick={() => onPostponeMatch(match.id)}
+                      >
+                        <Clock size={12} />
+                        Postpone
+                      </button>
+                    )}
                   </div>
                 )}
               </td>
