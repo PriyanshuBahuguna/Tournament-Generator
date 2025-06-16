@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function BracketView({ matches, teams, onMatchResult, postponedMatches }) {
-  // Group matches by round
+
   const roundMatches = useMemo(() => {
     const grouped = {}
 
@@ -15,7 +15,6 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
       grouped[match.round].push(match)
     })
 
-    // Define the order of known rounds
     const roundOrder = {
       "Playoff Final": 100,
       Final: 100,
@@ -25,13 +24,11 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
       Quarterfinals: 80,
     }
 
-    // Add Round of X rounds
     for (let i = 16; i <= 128; i *= 2) {
       roundOrder[`Round of ${i}`] = 70 - Math.log2(i)
       roundOrder[`Playoff Round of ${i}`] = 70 - Math.log2(i)
     }
 
-    // Sort rounds in order
     return Object.keys(grouped)
       .sort((a, b) => {
         const orderA = roundOrder[a] || 0
@@ -44,18 +41,14 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
       }))
   }, [matches])
 
-  // State for current round view
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0)
   const [viewMode, setViewMode] = useState("all")
 
-  // Get available view modes based on the number of rounds
   const availableViewModes = useMemo(() => {
     const modes = ["custom", "all"]
 
-    // Check if we have semifinals
     const hasSemifinals = roundMatches.some((r) => r.name === "Semifinals" || r.name === "Playoff Semifinals")
 
-    // Check if we have quarterfinals
     const hasQuarterfinals = roundMatches.some((r) => r.name === "Quarterfinals" || r.name === "Playoff Quarterfinals")
 
     if (hasSemifinals) {
@@ -67,20 +60,16 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
     return modes
   }, [roundMatches])
 
-  // Set default view mode based on available rounds
   useEffect(() => {
     if (availableViewModes.includes(viewMode)) {
       return
     }
 
-    // Default to the most detailed view available
     setViewMode(availableViewModes[1] || "all")
   }, [availableViewModes, viewMode])
 
-  // Determine which rounds to display based on view mode
   const displayRounds = useMemo(() => {
     if (viewMode === "all") {
-      // Show all rounds (or last 3 for larger tournaments)
       if (roundMatches.length > 4) {
         return roundMatches.slice(-3)
       }
@@ -96,7 +85,6 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
           r.name === "Playoff Final",
       )
     } else {
-      // Custom view - show only the current round
       return currentRoundIndex < roundMatches.length ? [roundMatches[currentRoundIndex]] : []
     }
   }, [roundMatches, viewMode, currentRoundIndex])
@@ -117,7 +105,6 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
     }
   }
 
-  // Get display name for the tab (remove "Playoff" prefix for cleaner UI)
   const getDisplayName = (viewMode) => {
     switch (viewMode) {
       case "all":
@@ -153,7 +140,7 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
               onClick={() => {
                 setViewMode(mode)
                 if (mode === "custom" && viewMode !== "custom") {
-                  setCurrentRoundIndex(0) // Reset to first round when switching to custom
+                  setCurrentRoundIndex(0)
                 }
               }}
               style={{
