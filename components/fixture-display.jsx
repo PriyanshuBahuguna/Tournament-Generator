@@ -20,29 +20,22 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
   const fixtureRef = useRef(null)
   const [activeTab, setActiveTab] = useState("table")
 
-  // Add schedule state
   const [schedule, setSchedule] = useState([])
-  // Add state to track postponed matches with their original and new dates
   const [postponedMatches, setPostponedMatches] = useState({})
-  // Add state to track original schedule days for postponed matches
   const [originalScheduleDays, setOriginalScheduleDays] = useState({})
 
   useEffect(() => {
-    // Simulate algorithm execution time
     const timer = setTimeout(() => {
       try {
-        // Validate teams array
         if (!Array.isArray(teams) || teams.length === 0) {
           throw new Error("No teams provided for tournament generation")
         }
 
-        // Check if all teams have an id
         const invalidTeams = teams.filter((team) => !team || team.id === undefined)
         if (invalidTeams.length > 0) {
           throw new Error("Some teams are missing required id property")
         }
 
-        // Update options with current withdrawn teams
         const updatedOptions = {
           ...options,
           withdrawnTeams: withdrawnTeams,
@@ -54,15 +47,12 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           schedule: generatedSchedule,
         } = generateTournament(teams, updatedOptions, rankingType)
 
-        // Check if matches were generated successfully
         if (!generatedMatches || generatedMatches.length === 0) {
           throw new Error("Failed to generate matches")
         }
 
-        // Log the round names to debug
         console.log("Generated rounds:", [...new Set(generatedMatches.map((m) => m.round))])
 
-        // Ensure dates in schedule are Date objects
         const processedSchedule = generatedSchedule
           ? generatedSchedule.map((day) => ({
               ...day,
@@ -92,7 +82,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
     setMatches((prevMatches) => {
       const updatedMatches = [...prevMatches]
 
-      // Find and update the current match
       const matchIndex = updatedMatches.findIndex((m) => m.id === matchId)
       if (matchIndex >= 0) {
         updatedMatches[matchIndex] = {
@@ -101,14 +90,12 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           status: "completed",
         }
 
-        // Find the next match where this winner should go
         const currentMatch = updatedMatches[matchIndex]
         const nextMatchId = currentMatch.nextMatchId
 
         if (nextMatchId) {
           const nextMatchIndex = updatedMatches.findIndex((m) => m.id === nextMatchId)
           if (nextMatchIndex >= 0) {
-            // Determine if this winner should be team1 or team2 in the next match
             if (currentMatch.position === "top") {
               updatedMatches[nextMatchIndex] = {
                 ...updatedMatches[nextMatchIndex],
@@ -130,21 +117,17 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
 
   function handleTeamWithdrawal(teamId) {
     try {
-      // Add team to withdrawn teams
       const newWithdrawnTeams = [...withdrawnTeams, teamId]
       setWithdrawnTeams(newWithdrawnTeams)
 
-      // Apply dynamic reseeding
       const reseedInsight = "Dynamic Reseeding: Applied during tournament"
 
       if (!algorithmInsights.includes(reseedInsight)) {
         setAlgorithmInsights([...algorithmInsights, reseedInsight])
       }
 
-      // Apply reseeding algorithm
       const updatedMatches = dynamicReseeding(matches, teams, newWithdrawnTeams, rankingType)
 
-      // Log the round names after reseeding to debug
       console.log("Reseeded rounds:", [...new Set(updatedMatches.map((m) => m.round))])
 
       setMatches(updatedMatches)
@@ -152,7 +135,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
       console.error("Error during team withdrawal:", error)
       setAlgorithmInsights([...algorithmInsights, "Error: Team withdrawal failed"])
     } finally {
-      // Close the modal
       setShowWithdrawModal(false)
     }
   }
@@ -166,10 +148,8 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
     if (!selectedMatchId) return
 
     try {
-      // Find the original schedule day for this match
       const originalDay = schedule.find((day) => !day.isRestDay && day.matches.some((m) => m.id === selectedMatchId))
 
-      // Store the original schedule day before postponement
       if (originalDay) {
         const originalDate = new Date(originalDay.date)
         const formattedOriginalDate = originalDate.toLocaleDateString("en-US", {
@@ -189,7 +169,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
         }))
       }
 
-      // Apply postponement
       const { matches: updatedMatches, schedule: updatedSchedule } = postponeMatch(
         selectedMatchId,
         matches,
@@ -198,7 +177,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
         options,
       )
 
-      // Find the new date for the postponed match
       const newScheduleDay = updatedSchedule.find(
         (day) => !day.isRestDay && day.matches.some((m) => m.id === selectedMatchId && m.status === "postponed"),
       )
@@ -212,17 +190,14 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
           year: "numeric",
         })
 
-        // Store the postponed match with its new date
         setPostponedMatches((prev) => ({
           ...prev,
           [selectedMatchId]: formattedDate,
         }))
 
-        // Check if the date actually changed
         if (originalDay && new Date(originalDay.date).toDateString() === newDate.toDateString()) {
           alert("Warning: Could not find a different date for this match. Please check the schedule.")
         } else {
-          // Show notification
           alert(`Match has been rescheduled to ${formattedDate}`)
         }
       }
@@ -230,7 +205,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
       setMatches(updatedMatches)
       setSchedule(updatedSchedule)
 
-      // Add insight about postponement
       const postponeInsight = "Match Postponement: Applied scheduling algorithm"
       if (!algorithmInsights.includes(postponeInsight)) {
         setAlgorithmInsights([...algorithmInsights, postponeInsight])
@@ -239,7 +213,6 @@ export default function FixtureDisplay({ teams, options, rankingType, onBack }) 
       console.error("Error during match postponement:", error)
       setAlgorithmInsights([...algorithmInsights, "Error: Match postponement failed"])
     } finally {
-      // Close the modal
       setShowPostponeModal(false)
       setSelectedMatchId(null)
     }

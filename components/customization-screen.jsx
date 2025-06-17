@@ -5,16 +5,33 @@ import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 
 export default function CustomizationScreen({ teams, rankingType, options, setOptions, onBack, setStep }) {
   const [enableDates, setEnableDates] = useState(!!options.startDate)
+  const [venueNames, setVenueNames] = useState(options.venueNames || Array(options.numVenues).fill("").map((_, i) => `Venue ${i + 1}`))
 
   function handleOptionChange(key, value) {
-    setOptions({ ...options, [key]: value })
+    if (key === "numVenues") {
+      const newNumVenues = Number.parseInt(value) || 1
+      // Adjust venue names array when number of venues changes
+      const newVenueNames = Array(newNumVenues).fill("").map((_, i) => 
+        venueNames[i] || `Venue ${i + 1}`
+      )
+      setVenueNames(newVenueNames)
+      setOptions({ ...options, numVenues: newNumVenues, venueNames: newVenueNames })
+    } else {
+      setOptions({ ...options, [key]: value, venueNames })
+    }
+  }
+
+  function handleVenueNameChange(index, value) {
+    const newVenueNames = [...venueNames]
+    newVenueNames[index] = value || `Venue ${index + 1}`
+    setVenueNames(newVenueNames)
+    setOptions({ ...options, venueNames: newVenueNames })
   }
 
   function handleEnableDates(enabled) {
     setEnableDates(enabled)
 
     if (!enabled) {
-      // Clear dates in options if disabled
       setOptions((prev) => ({
         ...prev,
         startDate: "",
@@ -171,7 +188,7 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                 type="number"
                 min="1"
                 value={options.numVenues}
-                onChange={(e) => handleOptionChange("numVenues", Number.parseInt(e.target.value) || 1)}
+                onChange={(e) => handleOptionChange("numVenues", e.target.value)}
                 style={{
                   width: "100%",
                   padding: "0.5rem",
@@ -181,6 +198,34 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
                   color: "white",
                 }}
               />
+            </div>
+          </div>
+
+          <div style={{ marginTop: "1rem" }}>
+            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", marginBottom: "0.5rem" }}>
+              Venue Names
+            </label>
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              {venueNames.map((name, index) => (
+                <div key={index} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <label style={{ fontSize: "0.875rem", color: "#999" }}>{`Venue ${index + 1}:`}</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => handleVenueNameChange(index, e.target.value)}
+                    placeholder={`Venue ${index + 1}`}
+                    style={{
+                      width: "100%",
+                      maxWidth: "16rem",
+                      padding: "0.5rem",
+                      backgroundColor: "#222",
+                      border: "1px solid #333",
+                      borderRadius: "0.25rem",
+                      color: "white",
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>
