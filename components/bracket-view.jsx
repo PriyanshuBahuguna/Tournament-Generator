@@ -136,10 +136,14 @@ export default function BracketView({ matches, teams, onMatchResult, postponedMa
   return (
     <div className="flex flex-col items-center bracket-container pdf-content">
       {hasCompletableMatches && (
-        <div className="mb-4 text-sm text-muted-foreground bg-secondary/30 p-2 rounded-md">
-          Click on a team name to mark them as the winner of their match
-        </div>
-      )}
+  <div className="mb-4 text-sm font-medium text-primary bg-yellow-200 border-l-4 border-yellow-500 p-3 rounded-md shadow-sm flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m0-4h.01M12 12h.01M12 16h.01M12 8h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+    </svg>
+    Click on a team name to mark them as the winner of their match
+  </div>
+)}
+
 
       <div className="tabs w-full mb-4">
         <div
