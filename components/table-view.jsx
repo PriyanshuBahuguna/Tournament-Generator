@@ -199,7 +199,7 @@ export default function TableView({ matches, teams, onMatchResult, onPostponeMat
                   </span>
                 )}
               </td>
-              <td style={{ padding: "0.5rem" }}>Venue {match.venue}</td>
+              <td style={{ padding: "0.5rem" }}>Venue: {match.venue}</td>
               <td style={{ padding: "0.5rem" }}>
                 <span
                   style={{
