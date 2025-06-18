@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { Clock } from "lucide-react"
 
 export default function TableView({ matches, teams, onMatchResult, onPostponeMatch, postponedMatches = {} }) {
-  // Sort matches by round and match number
+
   const sortedMatches = useMemo(() => {
     const roundOrder = {
       "Round of 128": 1,

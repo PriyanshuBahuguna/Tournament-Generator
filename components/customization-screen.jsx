@@ -9,11 +9,10 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
 
   function handleOptionChange(key, value) {
     if (key === "numVenues") {
-      const newNumVenues = Number.parseInt(value) || 1
-      // Adjust venue names array when number of venues changes
-      const newVenueNames = Array(newNumVenues).fill("").map((_, i) => 
-        venueNames[i] || `Venue ${i + 1}`
-      )
+      const newNumVenues = Math.max(1, Number.parseInt(value) || 1)
+      const newVenueNames = Array(newNumVenues)
+        .fill("")
+        .map((_, i) => venueNames[i] || `Venue ${i + 1}`)
       setVenueNames(newVenueNames)
       setOptions({ ...options, numVenues: newNumVenues, venueNames: newVenueNames })
     } else {
@@ -23,7 +22,7 @@ export default function CustomizationScreen({ teams, rankingType, options, setOp
 
   function handleVenueNameChange(index, value) {
     const newVenueNames = [...venueNames]
-    newVenueNames[index] = value || `Venue ${index + 1}`
+    newVenueNames[index] = value // Allow empty string
     setVenueNames(newVenueNames)
     setOptions({ ...options, venueNames: newVenueNames })
   }
